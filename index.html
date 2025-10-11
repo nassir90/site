@@ -78,6 +78,26 @@
   s {
       color: gray;
   }
+
+  a {
+  color: #aaa; /* muted gray */
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+a:hover,
+a:focus {
+  color: #ddd; /* lighter on hover */
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
+a:visited {
+  color: #999; /* slightly darker for visited links */
+}
+
+a:active {
+  color: #ccc;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+}
         #content-section {
             padding: 40px 220px;
             color: #eee;
