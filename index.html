@@ -11,8 +11,12 @@
   referrerpolicy="no-referrer"
 />
     <style>
-        body { margin: 0; overflow: hidden; background-color: #111111; }
-        canvas { display: block; }
+        body { margin: 0; background-color: #111111; }
+        #visualization-container {
+            height: 100vh;
+            position: relative;
+        }
+        canvas { z-index: -100; display: block; }
         #export-btn {
             position: absolute;
             top: 20px;
@@ -56,7 +60,7 @@
             font-size: 70px;
             font-weight: normal;
         }
-        #text-overlay p {
+        #text-overlay .subtext {
             margin: 0;
             font-size: 35px;
         }
@@ -70,6 +74,40 @@
   .socials a:hover {
     color: #fff;
   }
+
+  s {
+      color: gray;
+  }
+
+  a {
+  color: #aaa; /* muted gray */
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+a:hover,
+a:focus {
+  color: #ddd; /* lighter on hover */
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
+a:visited {
+  color: #999; /* slightly darker for visited links */
+}
+
+a:active {
+  color: #ccc;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+}
+        #content-section {
+            padding: 40px 220px;
+            color: #eee;
+            background-color: #1a1a1a;
+            
+            font-family: "Times New Roman", serif;
+            font-size: 28px;
+            line-height: 1.8;
+            margin-bottom: 40px;
+        }
     </style>
 </head>
 <body>
@@ -84,8 +122,20 @@
         <a href="https://www.youtube.com/@ChinazaUzoukwu/"><i class="fa-brands fa-youtube"></i></a>
       </p>
 </div>
-<div>
-    
+<div id="content-section">
+  <p>I'm Chinaza. I'm a computer science graduate from Trinity College Dublin. I'm interested in robotics, software development (especially in the face of AI), computer graphics and the linux desktop.</p>
+
+  <p>In college I spent most of my time serving as the technical lead of <a href="formulatrinity.ie">Formula Trinity Autonomus (FTA)</a>. Summer breaks were spent doing internships at Evervault and SIG.</p>
+
+  <p>Now that I've <s>been laid off from FTA</s> graduated, I've been spending time working on this website and on other to be released side projects. Stay tuned!</p>
+
+  <center><small><i>I'm visiting SF in November. Would love to meet engineers and founders. Please contact me if interested!</i></small></center>
+
+<h2>Previous Projects</h2>
+<ul>
+  <li><a href="https://github.com/FT-Autonomous/ft_grandprix">AI Grand Prix</a> - Open-source <a href="https://github.com/google-deepmind/mujoco/">MuJoCo</a> based simulator for autonomous racing.</li>
+  <li><a href="https://github.com/FT-Autonomous/">Formula Trinity</a> - Repositories used to compete at Formula Student AI</li>
+</ul>
 </div>
 <script type="importmap">
 {
@@ -175,12 +225,14 @@ async function main() {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x111111);
 
-    const camera = new THREE.PerspectiveCamera(cameraConfig.fov, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const container = document.getElementById('visualization-container');
+
+    const camera = new THREE.PerspectiveCamera(cameraConfig.fov, container.clientWidth / container.clientHeight, 0.1, 1000);
     camera.position.set(cameraConfig.position.x, cameraConfig.position.y, cameraConfig.position.z);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.set(cameraConfig.target.x, cameraConfig.target.y, cameraConfig.target.z);
@@ -210,8 +262,9 @@ async function main() {
         const now = Date.now();
         lastMouseMoveTime = now;
         
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        const rect = container.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         
         // Throttle raycasting for performance
         if (now - lastRaycastTime > raycastThrottle) {
@@ -378,7 +431,12 @@ async function main() {
     const animationInterval = 75; // 100ms = 10Hz
     
     function animate() {
-    renderer.setSize(window.innerWidth, window.innerHeight);
+        if (container.clientWidth !== camera.aspect * container.clientHeight) {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
         controls.update();
         applyDistortion();
         renderer.render(scene, camera);
