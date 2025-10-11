@@ -2,9 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Point Cloud Viewer</title>
+    <title>Chinaza Uzoukwu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&display=swap" rel="stylesheet">
+    <link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"
+/>
     <style>
-        body { margin: 0; overflow: hidden; }
+        body { margin: 0; overflow: hidden; background-color: #111111; }
         canvas { display: block; }
         #export-btn {
             position: absolute;
@@ -35,23 +42,48 @@
             text-align: center;
             padding: 0 40px;
             box-sizing: border-box;
+            
+            font-family: "Cormorant Garamond", "Times New Roman", serif;
+  
+  line-height: 0.9;
         }
+        
         #text-overlay h1 {
             margin: 0 0 30px 0;
-            font-size: 48px;
+            font-size: 70px;
             font-weight: normal;
         }
         #text-overlay p {
             margin: 0;
-            font-size: 24px;
+            font-size: 35px;
         }
+
+         .socials a {
+    color: #ccc;
+    margin: 0 8px;
+    font-size: 1.5em;
+    transition: color 0.2s;
+  }
+  .socials a:hover {
+    color: #fff;
+  }
     </style>
 </head>
 <body>
 <button id="export-btn">Export Camera</button>
 <div id="text-overlay">
-    <h1>Chinaza Uzoukwu</h1>
-    <p>Welcome to my corner of the web!</p>
+    <h1><b>Chinaza Uzoukwu</b></h1>
+    <p>Welcome to my corner of the web</p>
+    <br><br>
+    <div class="socials">
+        <a href="https://twitter.com/zoukwuberg" target="_blank"><i class="fab fa-x-twitter"></i></a>
+        <a href="https://github.com/nassir90" target="_blank"><i class="fab fa-github"></i></a>
+        <a href="https://www.linkedin.com/in/chinaza-uzoukwu-a33219228" target="_blank"><i class="fab fa-linkedin"></i></a>
+        <a href="https://www.youtube.com/@ChinazaUzoukwu/"><i class="fa-brands fa-youtube"></i></a>
+      </div>
+</div>
+<div>
+    
 </div>
 <script type="importmap">
 {
@@ -68,6 +100,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // Debug mode - set to true to show export button
 const DEBUG_MODE = false;
 
+// Dropout parameter - percentage of points to render (0.0 to 1.0)
+const DROPOUT_RATE = 1.0; // 10% of points will be rendered
+
 // Camera configuration - modify these values to set initial view
 const cameraConfig = {
   "position": {
@@ -83,17 +118,34 @@ const cameraConfig = {
   "fov": 75
 };
 
+async function loadPointsBin(url) {
+  const res = await fetch(url);
+  const buffer = await res.arrayBuffer();
+  const floats = new Float32Array(buffer);
+
+  const points = [];
+  for (let i = 0; i < floats.length; i += 3) {
+    points.push({ x: floats[i], y: floats[i + 1], z: floats[i + 2] });
+  }
+
+  return points;
+}
+
 async function loadPointCloud() {
-    const response = await fetch('pointcloud_capture.json');
-    const data = await response.json();
+    const data = await loadPointsBin('pointcloud_capture.bin');
     return data;
 }
 
 function createPointCloud(points) {
     const geometry = new THREE.BufferGeometry();
+    
+    // Apply distance filter and dropout sampling
     const filteredPoints = points.filter(p => {
         const distance = Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
-        return distance <= 2.0;
+        if (distance > 2.0) return false;
+        
+        // Apply dropout - randomly keep only DROPOUT_RATE percentage of points
+        return Math.random() < DROPOUT_RATE;
     });
     
     const positions = new Float32Array(filteredPoints.length * 3);
@@ -113,7 +165,7 @@ function createPointCloud(points) {
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.userData.originalPositions = originalPositions;
 
-    const material = new THREE.PointsMaterial({ color: 0xffffff, size: 0.001 });
+    const material = new THREE.PointsMaterial({ color: 0xffffff, size: 0.0015 });
     return new THREE.Points(geometry, material);
 }
 
@@ -148,29 +200,50 @@ async function main() {
     const windFadeOutDelay = 2000; // 2 seconds of inactivity before fade out
     const windFadeOutDuration = 1500; // 1.5 seconds to fade out
     
-    // Mouse move handler
+    // Mouse move handler with throttling
+    let lastRaycastTime = 0;
+    const raycastThrottle = 16; // ~60fps, only raycast every 16ms
+    
     function onMouseMove(event) {
+        const now = Date.now();
+        lastMouseMoveTime = now;
+        
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         
-        lastMouseMoveTime = Date.now();
-        
-        // Update raycaster
-        raycaster.setFromCamera(mouse, camera);
-        
-        // Get intersection point in 3D space
-        const intersects = raycaster.intersectObject(pointCloud);
-        if (intersects.length > 0) {
-            mouseWorldPos.copy(intersects[0].point);
+        // Throttle raycasting for performance
+        if (now - lastRaycastTime > raycastThrottle) {
+            lastRaycastTime = now;
+            
+            // Update raycaster
+            raycaster.setFromCamera(mouse, camera);
+            
+            // Get intersection point in 3D space
+            const intersects = raycaster.intersectObject(pointCloud);
+            if (intersects.length > 0) {
+                mouseWorldPos.copy(intersects[0].point);
+            }
         }
     }
     
-    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
     
     // Distortion function
     let time = 0;
     let windStartTime = 0;
     let isFadingIn = false;
+    
+    // Pre-calculate sine lookup table for flutter (major performance boost)
+    const FLUTTER_TABLE_SIZE = 1024;
+    const flutterTable1 = new Float32Array(FLUTTER_TABLE_SIZE);
+    const flutterTable2 = new Float32Array(FLUTTER_TABLE_SIZE);
+    const flutterTable3 = new Float32Array(FLUTTER_TABLE_SIZE);
+    for (let i = 0; i < FLUTTER_TABLE_SIZE; i++) {
+        const angle = (i / FLUTTER_TABLE_SIZE) * Math.PI * 2;
+        flutterTable1[i] = Math.sin(angle) * 0.003;
+        flutterTable2[i] = Math.sin(angle) * 0.002;
+        flutterTable3[i] = Math.sin(angle) * 0.0025;
+    }
     
     function applyDistortion() {
         const now = Date.now();
@@ -203,36 +276,53 @@ async function main() {
         const positions = pointCloud.geometry.attributes.position.array;
         const originalPositions = pointCloud.geometry.userData.originalPositions;
         const distortionRadius = 0.35; // Radius of effect
+        const distortionRadiusSq = distortionRadius * distortionRadius; // Squared for faster comparison
         const distortionStrength = 0.05; // How much to push points
+        const invDistortionRadius = 1 / distortionRadius;
+        
+        // Pre-calculate lookup table indices
+        const tableIndex1 = ((time * 2.5) % (Math.PI * 2)) / (Math.PI * 2) * FLUTTER_TABLE_SIZE;
+        const tableIndex2 = ((time * 3.2) % (Math.PI * 2)) / (Math.PI * 2) * FLUTTER_TABLE_SIZE;
+        const tableIndex3 = ((time * 1.8) % (Math.PI * 2)) / (Math.PI * 2) * FLUTTER_TABLE_SIZE;
+        
+        // Cache mouse position
+        const mouseX = mouseWorldPos.x;
+        const mouseY = mouseWorldPos.y;
+        const mouseZ = mouseWorldPos.z;
+        
+        const numPoints = positions.length / 3;
         
         for (let i = 0; i < positions.length; i += 3) {
             const originalX = originalPositions[i];
             const originalY = originalPositions[i + 1];
             const originalZ = originalPositions[i + 2];
             
-            // Add delicate flutter effect to all points, scaled by wind intensity
-            const pointIndex = i / 3;
-            const flutter1 = Math.sin(time * 2.5 + pointIndex * 0.1) * 0.003;
-            const flutter2 = Math.sin(time * 3.2 + pointIndex * 0.15) * 0.002;
-            const flutter3 = Math.sin(time * 1.8 + pointIndex * 0.08) * 0.0025;
-            const flutterAmount = (flutter1 + flutter2 + flutter3) * windIntensity;
+            // Calculate distance from mouse position (squared for performance)
+            const dx = originalX - mouseX;
+            const dy = originalY - mouseY;
+            const dz = originalZ - mouseZ;
+            const distanceSq = dx * dx + dy * dy + dz * dz;
             
-            // Calculate distance from mouse position
-            const dx = originalX - mouseWorldPos.x;
-            const dy = originalY - mouseWorldPos.y;
-            const dz = originalZ - mouseWorldPos.z;
-            const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            // Use lookup table for flutter (much faster than Math.sin)
+            const pointIndex = (i / 3) / numPoints;
+            const idx1 = ((tableIndex1 + pointIndex * 102.4) | 0) % FLUTTER_TABLE_SIZE;
+            const idx2 = ((tableIndex2 + pointIndex * 153.6) | 0) % FLUTTER_TABLE_SIZE;
+            const idx3 = ((tableIndex3 + pointIndex * 81.92) | 0) % FLUTTER_TABLE_SIZE;
             
-            if (distance < distortionRadius) {
+            const flutterAmount = (flutterTable1[idx1] + flutterTable2[idx2] + flutterTable3[idx3]) * windIntensity;
+            
+            if (distanceSq < distortionRadiusSq) {
                 // Apply gentle, gradual falloff with cubic easing
-                const influence = 1 - (distance / distortionRadius);
+                const distance = Math.sqrt(distanceSq);
+                const influence = 1 - distance * invDistortionRadius;
                 const easedInfluence = influence * influence * influence; // Cubic ease for gentler start
                 
                 // Push points away from mouse
                 const pushAmount = distortionStrength * easedInfluence;
-                const dirX = dx / (distance + 0.0001);
-                const dirY = dy / (distance + 0.0001);
-                const dirZ = dz / (distance + 0.0001);
+                const invDistance = 1 / (distance + 0.0001);
+                const dirX = dx * invDistance;
+                const dirY = dy * invDistance;
+                const dirZ = dz * invDistance;
                 
                 positions[i] = originalX + dirX * pushAmount + flutterAmount;
                 positions[i + 1] = originalY + dirY * pushAmount + flutterAmount * 0.8;
@@ -282,14 +372,18 @@ async function main() {
         });
     });
 
+    // Run animation at 10Hz for performance
+    const animationInterval = 75; // 100ms = 10Hz
+    
     function animate() {
-        requestAnimationFrame(animate);
+    renderer.setSize(window.innerWidth, window.innerHeight);
         controls.update();
         applyDistortion();
         renderer.render(scene, camera);
     }
 
-    animate();
+    // Use setInterval instead of requestAnimationFrame for 10Hz
+    setInterval(animate, animationInterval);
 }
 
 main();
