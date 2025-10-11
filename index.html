@@ -11,7 +11,11 @@
   referrerpolicy="no-referrer"
 />
     <style>
-        body { margin: 0; overflow: hidden; background-color: #111111; }
+        body { margin: 0; background-color: #111111; }
+        #visualization-container {
+            height: 100vh;
+            position: relative;
+        }
         canvas { display: block; }
         #export-btn {
             position: absolute;
@@ -67,12 +71,21 @@
   .socials a:hover {
     color: #fff;
   }
+        #content-section {
+            padding: 40px;
+            color: #eee;
+            background-color: #1a1a1a;
+            font-family: 'Georgia', serif;
+            font-size: 18px;
+            line-height: 1.8;
+        }
     </style>
 </head>
 <body>
-<button id="export-btn">Export Camera</button>
-<div id="text-overlay">
-    <h1>Chi<span style="text-shadow: 6px 6px 1px #aa0000;">naza</span> Uzoukwu</h1>
+<div id="visualization-container">
+    <button id="export-btn">Export Camera</button>
+    <div id="text-overlay">
+        <h1>Chi<span style="text-shadow: 6px 6px 1px #aa0000;">naza</span> Uzoukwu</h1>
     <p>Welcome to my corner of the web</p>
     <br><br>
     <div class="socials">
@@ -81,9 +94,12 @@
         <a href="https://www.linkedin.com/in/chinaza-uzoukwu-a33219228" target="_blank"><i class="fab fa-linkedin"></i></a>
         <a href="https://www.youtube.com/@ChinazaUzoukwu/"><i class="fa-brands fa-youtube"></i></a>
       </div>
+    </div>
 </div>
-<div>
-    
+<div id="content-section">
+    <h2>About Me</h2>
+    <p>This is a placeholder section where you can add more information about yourself, your work, or anything else you'd like to share. The 3D visualization above is interactive—move your mouse to see the effect!</p>
+    <p>You can scroll down to see more content like this.</p>
 </div>
 <script type="importmap">
 {
@@ -173,12 +189,14 @@ async function main() {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x111111);
 
-    const camera = new THREE.PerspectiveCamera(cameraConfig.fov, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const container = document.getElementById('visualization-container');
+
+    const camera = new THREE.PerspectiveCamera(cameraConfig.fov, container.clientWidth / container.clientHeight, 0.1, 1000);
     camera.position.set(cameraConfig.position.x, cameraConfig.position.y, cameraConfig.position.z);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.set(cameraConfig.target.x, cameraConfig.target.y, cameraConfig.target.z);
@@ -208,8 +226,9 @@ async function main() {
         const now = Date.now();
         lastMouseMoveTime = now;
         
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        const rect = container.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         
         // Throttle raycasting for performance
         if (now - lastRaycastTime > raycastThrottle) {
@@ -376,7 +395,12 @@ async function main() {
     const animationInterval = 75; // 100ms = 10Hz
     
     function animate() {
-    renderer.setSize(window.innerWidth, window.innerHeight);
+        if (container.clientWidth !== camera.aspect * container.clientHeight) {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
         controls.update();
         applyDistortion();
         renderer.render(scene, camera);
