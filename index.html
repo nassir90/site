@@ -16,7 +16,7 @@
             height: 100vh;
             position: relative;
         }
-        canvas { display: block; }
+        canvas { z-index: -100; display: block; }
         #export-btn {
             position: absolute;
             top: 20px;
@@ -74,12 +74,17 @@
   .socials a:hover {
     color: #fff;
   }
+
+  s {
+      color: gray;
+  }
         #content-section {
-            padding: 40px;
+            padding: 40px 220px;
             color: #eee;
             background-color: #1a1a1a;
-            font-family: 'Georgia', serif;
-            font-size: 18px;
+            
+            font-family: "Times New Roman", serif;
+            font-size: 28px;
             line-height: 1.8;
             margin-bottom: 40px;
         }
@@ -100,9 +105,19 @@
     </div>
 </div>
 <div id="content-section">
-    <h2>About Me</h2>
-    <p>This is a placeholder section where you can add more information about yourself, your work, or anything else you'd like to share. The 3D visualization above is interactive—move your mouse to see the effect!</p>
-    <p>You can scroll down to see more content like this.</p>
+  <p>I'm Chinaza. I'm a computer science graduate from Trinity College Dublin. I'm interested in robotics, software development (especially in the face of AI), computer graphics and the linux desktop.</p>
+
+  <p>In college I spent most of my time serving as the technical lead of <a href="formulatrinity.ie">Formula Trinity Autonomus (FTA)</a>. Summer breaks were spent doing internships at Evervault and SIG.</p>
+
+  <p>Now that I've <s>been laid off from FTA</s> graduated, I've been spending time working on this website and on other to be released side projects. Stay tuned!</p>
+
+  <center><small><i>I'm visiting SF in November. Would love to meet engineers and founders. Please contact me if interested!</i></small></center>
+
+<h2>Previous Projects</h2>
+<ul>
+  <li><a href="https://github.com/FT-Autonomous/ft_grandprix">AI Grand Prix</a> - Open-source <a href="https://github.com/google-deepmind/mujoco/">MuJoCo</a> based simulator for autonomous racing.</li>
+  <li><a href="https://github.com/FT-Autonomous/">Formula Trinity</a> - Repositories used to compete at Formula Student AI</li>
+</ul>
 </div>
 <script type="importmap">
 {
