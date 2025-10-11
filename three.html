@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Point Cloud Viewer</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+        #export-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            z-index: 100;
+        }
+        #export-btn:hover {
+            background: #0052a3;
+        }
+        #text-overlay {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-family: Georgia, 'Times New Roman', serif;
+            z-index: 100;
+            line-height: 1.6;
+            text-align: center;
+            padding: 0 40px;
+            box-sizing: border-box;
+        }
+        #text-overlay h1 {
+            margin: 0 0 30px 0;
+            font-size: 48px;
+            font-weight: normal;
+        }
+        #text-overlay p {
+            margin: 0;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+<button id="export-btn">Export Camera</button>
+<div id="text-overlay">
+    <h1>Chinaza Uzoukwu</h1>
+    <p>Welcome to my corner of the web!</p>
+</div>
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// Debug mode - set to true to show export button
+const DEBUG_MODE = false;
+
+// Camera configuration - modify these values to set initial view
+const cameraConfig = {
+  "position": {
+    "x": -0.16460022675053126,
+    "y": -0.6228621995655184,
+    "z": 2.2373369015612683
+  },
+  "target": {
+    "x": -0.24632319124295435,
+    "y": 0.8274498897248066,
+    "z": 0.6926157919499376
+  },
+  "fov": 75
+};
+
+async function loadPointCloud() {
+    const response = await fetch('pointcloud_capture.json');
+    const data = await response.json();
+    return data;
+}
+
+function createPointCloud(points) {
+    const geometry = new THREE.BufferGeometry();
+    const filteredPoints = points.filter(p => {
+        const distance = Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z);
+        return distance <= 2.0;
+    });
+    
+    const positions = new Float32Array(filteredPoints.length * 3);
+    const originalPositions = new Float32Array(filteredPoints.length * 3);
+    
+    for (let i = 0; i < filteredPoints.length; i++) {
+        positions[3*i] = filteredPoints[i].x;
+        positions[3*i + 1] = filteredPoints[i].y;
+        positions[3*i + 2] = filteredPoints[i].z;
+        
+        // Store original positions for distortion calculations
+        originalPositions[3*i] = filteredPoints[i].x;
+        originalPositions[3*i + 1] = filteredPoints[i].y;
+        originalPositions[3*i + 2] = filteredPoints[i].z;
+    }
+    
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.userData.originalPositions = originalPositions;
+
+    const material = new THREE.PointsMaterial({ color: 0xffffff, size: 0.001 });
+    return new THREE.Points(geometry, material);
+}
+
+async function main() {
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111111);
+
+    const camera = new THREE.PerspectiveCamera(cameraConfig.fov, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(cameraConfig.position.x, cameraConfig.position.y, cameraConfig.position.z);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(cameraConfig.target.x, cameraConfig.target.y, cameraConfig.target.z);
+    controls.enabled = DEBUG_MODE; // Only enable controls in debug mode
+    controls.update();
+
+    const points = await loadPointCloud();
+    const pointCloud = createPointCloud(points);
+    scene.add(pointCloud);
+    
+    // Mouse interaction setup
+    const raycaster = new THREE.Raycaster();
+    raycaster.params.Points.threshold = 0.05; // Detection radius
+    const mouse = new THREE.Vector2();
+    let mouseWorldPos = new THREE.Vector3();
+    let windIntensity = 0; // 0 to 1, controls wind effect strength
+    let lastMouseMoveTime = 0;
+    const windFadeInDuration = 1000; // 1 second to fade in
+    const windFadeOutDelay = 2000; // 2 seconds of inactivity before fade out
+    const windFadeOutDuration = 1500; // 1.5 seconds to fade out
+    
+    // Mouse move handler
+    function onMouseMove(event) {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        
+        lastMouseMoveTime = Date.now();
+        
+        // Update raycaster
+        raycaster.setFromCamera(mouse, camera);
+        
+        // Get intersection point in 3D space
+        const intersects = raycaster.intersectObject(pointCloud);
+        if (intersects.length > 0) {
+            mouseWorldPos.copy(intersects[0].point);
+        }
+    }
+    
+    window.addEventListener('mousemove', onMouseMove);
+    
+    // Distortion function
+    let time = 0;
+    let windStartTime = 0;
+    let isFadingIn = false;
+    
+    function applyDistortion() {
+        const now = Date.now();
+        const timeSinceLastMove = now - lastMouseMoveTime;
+        
+        // Update wind intensity with easing
+        if (timeSinceLastMove < windFadeOutDelay) {
+            // Mouse is active, fade in
+            if (!isFadingIn) {
+                windStartTime = now;
+                isFadingIn = true;
+            }
+            const fadeInProgress = Math.min((now - windStartTime) / windFadeInDuration, 1);
+            windIntensity = fadeInProgress * fadeInProgress * (3 - 2 * fadeInProgress); // Smoothstep
+        } else {
+            // Mouse inactive, fade out
+            isFadingIn = false;
+            const fadeOutProgress = Math.min((timeSinceLastMove - windFadeOutDelay) / windFadeOutDuration, 1);
+            const fadeOutEased = fadeOutProgress * fadeOutProgress * (3 - 2 * fadeOutProgress); // Smoothstep
+            windIntensity = 1 - fadeOutEased;
+        }
+        
+        // Skip processing if wind is completely off
+        if (windIntensity <= 0.001) {
+            windIntensity = 0;
+            return;
+        }
+        
+        time += 0.016; // Approximate frame time
+        const positions = pointCloud.geometry.attributes.position.array;
+        const originalPositions = pointCloud.geometry.userData.originalPositions;
+        const distortionRadius = 0.35; // Radius of effect
+        const distortionStrength = 0.05; // How much to push points
+        
+        for (let i = 0; i < positions.length; i += 3) {
+            const originalX = originalPositions[i];
+            const originalY = originalPositions[i + 1];
+            const originalZ = originalPositions[i + 2];
+            
+            // Add delicate flutter effect to all points, scaled by wind intensity
+            const pointIndex = i / 3;
+            const flutter1 = Math.sin(time * 2.5 + pointIndex * 0.1) * 0.003;
+            const flutter2 = Math.sin(time * 3.2 + pointIndex * 0.15) * 0.002;
+            const flutter3 = Math.sin(time * 1.8 + pointIndex * 0.08) * 0.0025;
+            const flutterAmount = (flutter1 + flutter2 + flutter3) * windIntensity;
+            
+            // Calculate distance from mouse position
+            const dx = originalX - mouseWorldPos.x;
+            const dy = originalY - mouseWorldPos.y;
+            const dz = originalZ - mouseWorldPos.z;
+            const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            
+            if (distance < distortionRadius) {
+                // Apply gentle, gradual falloff with cubic easing
+                const influence = 1 - (distance / distortionRadius);
+                const easedInfluence = influence * influence * influence; // Cubic ease for gentler start
+                
+                // Push points away from mouse
+                const pushAmount = distortionStrength * easedInfluence;
+                const dirX = dx / (distance + 0.0001);
+                const dirY = dy / (distance + 0.0001);
+                const dirZ = dz / (distance + 0.0001);
+                
+                positions[i] = originalX + dirX * pushAmount + flutterAmount;
+                positions[i + 1] = originalY + dirY * pushAmount + flutterAmount * 0.8;
+                positions[i + 2] = originalZ + dirZ * pushAmount + flutterAmount * 1.2;
+            } else {
+                // Apply only flutter effect
+                positions[i] = originalX + flutterAmount;
+                positions[i + 1] = originalY + flutterAmount * 0.8;
+                positions[i + 2] = originalZ + flutterAmount * 1.2;
+            }
+        }
+        
+        pointCloud.geometry.attributes.position.needsUpdate = true;
+    }
+
+    // Show/hide export button based on debug mode
+    const exportBtn = document.getElementById('export-btn');
+    if (!DEBUG_MODE) {
+        exportBtn.style.display = 'none';
+    }
+
+    // Export camera button handler
+    exportBtn.addEventListener('click', () => {
+        const config = {
+            position: {
+                x: camera.position.x,
+                y: camera.position.y,
+                z: camera.position.z
+            },
+            target: {
+                x: controls.target.x,
+                y: controls.target.y,
+                z: controls.target.z
+            },
+            fov: camera.fov
+        };
+        
+        const json = JSON.stringify(config, null, 2);
+        console.log('Camera Configuration:');
+        console.log(json);
+        
+        // Copy to clipboard
+        navigator.clipboard.writeText(json).then(() => {
+            alert('Camera parameters copied to clipboard!');
+        }).catch(err => {
+            alert('Camera parameters logged to console');
+        });
+    });
+
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        applyDistortion();
+        renderer.render(scene, camera);
+    }
+
+    animate();
+}
+
+main();
+</script>
+</body>
+</html>
