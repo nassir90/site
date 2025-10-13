@@ -18,6 +18,7 @@
         }
         canvas { z-index: -100; display: block; }
         #export-btn {
+            display: none;
             position: absolute;
             top: 20px;
             right: 20px;
@@ -397,8 +398,8 @@ async function main() {
 
     // Show/hide export button based on debug mode
     const exportBtn = document.getElementById('export-btn');
-    if (!DEBUG_MODE) {
-        exportBtn.style.display = 'none';
+    if (DEBUG_MODE) {
+        exportBtn.style.display = '';
     }
 
     // Export camera button handler
