@@ -19,11 +19,9 @@
             <li>Collected on-track datasets as ROS2 bags.</li>
         </ul>
     
-    <!-- Memories banner placed prominently and horizontally -->
-    <img src="/images/memories.png" class="banner-image" alt="Team Memories 2024/2025">
-
-    <!-- Technical images arranged in a grid -->
-    <div class="technical-gallery">
+    <!-- First block of images -->
+    <div class="first-image-block">
+        <img class="banner" src="/images/memories.png" alt="Team Memories 2024/2025">
         <img src="/images/RIGB.png" alt="AI Testing Rig B">
         <img src="/images/calib.png" alt="Sensor Fusion Calibration Visual">
     </div>
@@ -81,59 +79,54 @@
         }
     }
 
+    .banner {
+        grid-column: span 2;
+    }
+
     /* Layout Styling */
 
     img {
         border: 1px solid white;
-        /* Remove default img height setting to allow flex/grid to control it */
-        /* height: auto; */ 
         display: block;
         width: 100%;
-        object-fit: cover; /* Ensures images cover their allocated space */
     }
 
-    .banner-image {
+    .first-image-block {
+        display: grid;
+        grid-template-columns: 1fr 1fr repeat(2, 0.75fr); /* 3 columns for desktop */
+        gap: 20px;
         margin-top: 30px;
         margin-bottom: 40px;
-        width: 100%;
-        max-height: 250px; 
-        /* object-fit: cover; Already applied above, but keeping for clarity */
     }
 
-    .technical-gallery {
-        display: grid;
-        /* Two columns for technical images on larger screens */
-        grid-template-columns: repeat(2, 1fr); 
-        gap: 20px;
-        /* Crucial: Define the row height for the grid containers */
-        grid-auto-rows: 300px; /* Example fixed height for images in this section */
-        margin-bottom: 20px;
-    }
-    
-    /* Target images inside .technical-gallery to ensure they fill the fixed height cell */
-    .technical-gallery img {
+    .first-image-block img {
         height: 100%;
+        object-fit: cover;
     }
 
     .lower {
         display: grid;
         grid-template-columns: repeat(4, 1fr); 
         gap: 20px;
-        /* Crucial: Define the row height for the lower grid containers */
-        grid-auto-rows: 150px; /* Example fixed height for the 4-column simulator images */
     }
 
-    /* Target images inside .lower to ensure they fill the fixed height cell */
     .lower img {
         height: 100%;
+        object-fit: cover;
     }
 
     @media (max-width: 768px) {
+        #content-section {
+            padding: 20px 40px;
+            font-size: 18px;
+        }
+
+        .first-image-block {
+            grid-template-columns: repeat(2, 1fr); Single column for mobile */
+        }
+
         .technical-gallery, .lower {
-            /* Switch to single column on smaller screens */
-            grid-template-columns: 1fr;
-            /* Adjust height for mobile viewing */
-            grid-auto-rows: 200px; 
+            grid-template-columns: repeat(2, 1fr); /* Single column for mobile */
         }
     }
 </style>
