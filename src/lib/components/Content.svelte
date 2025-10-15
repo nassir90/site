@@ -31,7 +31,7 @@
     <p><a href="https://github.com/FT-Autonomous/ft_grandprix">AI Grand Prix</a> is an open-source <a href="https://github.com/google-deepmind/mujoco/">MuJoCo</a> based simulator for autonomous racing. It's inspired by the F1Tenth competition. I collaborated with Formula Trinity's business operations team to host a successful hackathon where people could run the simulator and try to make their own self driving racecars.</p>
 
     <!-- Technical images arranged in a grid -->
-    <div class="technical-gallery">
+    <div class="technical-gallery lower">
         <img src="/images/aigp1.png" alt="AI GP Simulator Screenshot 1">
         <img src="/images/aigp2.png" alt="AI GP Simulator Screenshot 2">
         <img src="/images/aigp3.png" alt="AI GP Simulator Screenshot 3">
@@ -85,9 +85,11 @@
 
     img {
         border: 1px solid white;
-        height: auto;
+        /* Remove default img height setting to allow flex/grid to control it */
+        /* height: auto; */ 
         display: block;
         width: 100%;
+        object-fit: cover; /* Ensures images cover their allocated space */
     }
 
     .banner-image {
@@ -95,7 +97,7 @@
         margin-bottom: 40px;
         width: 100%;
         max-height: 250px; 
-        object-fit: cover; /* Ensures long image fits well */
+        /* object-fit: cover; Already applied above, but keeping for clarity */
     }
 
     .technical-gallery {
@@ -103,12 +105,35 @@
         /* Two columns for technical images on larger screens */
         grid-template-columns: repeat(2, 1fr); 
         gap: 20px;
+        /* Crucial: Define the row height for the grid containers */
+        grid-auto-rows: 300px; /* Example fixed height for images in this section */
+        margin-bottom: 20px;
+    }
+    
+    /* Target images inside .technical-gallery to ensure they fill the fixed height cell */
+    .technical-gallery img {
+        height: 100%;
+    }
+
+    .lower {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr); 
+        gap: 20px;
+        /* Crucial: Define the row height for the lower grid containers */
+        grid-auto-rows: 150px; /* Example fixed height for the 4-column simulator images */
+    }
+
+    /* Target images inside .lower to ensure they fill the fixed height cell */
+    .lower img {
+        height: 100%;
     }
 
     @media (max-width: 768px) {
-        .technical-gallery {
+        .technical-gallery, .lower {
             /* Switch to single column on smaller screens */
-            /* grid-template-columns: 1fr; */
+            grid-template-columns: 1fr;
+            /* Adjust height for mobile viewing */
+            grid-auto-rows: 200px; 
         }
     }
 </style>
