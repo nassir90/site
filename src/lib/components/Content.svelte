@@ -1,7 +1,7 @@
 <div id="content-section">
     <p>I'm Chinaza. I'm a computer science graduate from Trinity College Dublin. I'm interested in robotics, software development (especially in the face of AI), computer graphics and the linux desktop.</p>
 
-    <p>In college I spent most of my time serving as the technical lead of <a href="formulatrinity.ie">Formula Trinity Autonomus (FTA)</a>. Summer breaks were spent doing internships at Evervault and SIG.</p>
+    <p>In college I spent most of my time serving as the technical lead of <a href="https://formulatrinity.ie" rel="external">Formula Trinity Autonomus (FTA)</a>. Summer breaks were spent doing internships at Evervault and SIG.</p>
 
     <p>Now that I've <s>been laid off from FTA</s> graduated, I've been spending time working on this website and on other to be released side projects. Stay tuned!</p>
 
