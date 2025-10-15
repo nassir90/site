@@ -1,14 +1,14 @@
 <div id="content-section">
     <p>I'm Chinaza. I'm a computer science graduate from Trinity College Dublin. I'm interested in robotics, software development (especially in the face of AI), computer graphics and the linux desktop.</p>
 
-    <p>In college I spent most of my time serving as the technical lead of <a href="https://formulatrinity.ie" rel="external">Formula Trinity Autonomus (FTA)</a>. Summer breaks were spent doing internships at Evervault and SIG.</p>
+    <p>In college I spent most of my time serving as the technical lead of <a href="https://formulatrinity.ie" rel="external">Formula Trinity Autonomous (FTA)</a>. Summer breaks were spent doing internships at Evervault and SIG.</p>
 
     <p>Now that I've <s>been laid off from FTA</s> graduated, I've been spending time working on this website and on other to be released side projects. Stay tuned!</p>
 
     <center><small><i>I'm visiting SF in November. Would love to meet engineers and founders. Please contact me if interested!</i></small></center>
 
     <h2>Previous Projects</h2>
-    <p>Some of the code I wrote while on FTA cn be found in the <a href="https://github.com/FT-Autonomous/">Formula Trinity GitHub Organisation</a>. Other work I did as the technical lead includes:</p>
+    <p>Some of the code I wrote while on FTA can be found in the <a href="https://github.com/FT-Autonomous/">Formula Trinity GitHub Organisation</a>. Other work I did as the technical lead includes:</p>
 
         <ul>
             <li>Trained computer vision models (CGNET, YOLOv5 -> YOLOv8) using NVIDIA compute.</li>
