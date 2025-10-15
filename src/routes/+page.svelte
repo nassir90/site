@@ -41,4 +41,24 @@
             height: auto;
         }
     }
+        img {
+        border: 1px solid white;
+        width: 100%; 
+        height: auto;
+        display: block;
+    }
+    
+    :global(body) {
+        margin: 0;
+        background-color: #111111;
+    }
+
+    #content-section {
+        padding: 40px 10%;
+        color: #eee;
+        font-family: "Times New Roman", serif;
+        font-size: 28px;
+        line-height: 1.8;
+        margin-bottom: 40px;
+    }
 </style>
