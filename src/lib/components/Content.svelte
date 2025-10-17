@@ -21,7 +21,8 @@
     
     <!-- First block of images -->
     <div class="first-image-block">
-        <img class="banner" src="/images/memories.png" alt="Team Memories 2024/2025">
+        <img class="banner" src="/images/memories1.png" alt="Team Memories 2023/2024">
+        <img class="banner" src="/images/memories2.png" alt="Team Memories 2024/2025">
         <img src="/images/RIGB.png" alt="AI Testing Rig B">
         <img src="/images/calib.png" alt="Sensor Fusion Calibration Visual">
     </div>
@@ -79,14 +80,9 @@
         }
     }
 
-    .banner {
-        grid-column: span 2;
-    }
-
     /* Layout Styling */
 
     img {
-        border: 1px solid white;
         display: block;
         width: 100%;
     }
@@ -122,7 +118,7 @@
         }
 
         .first-image-block {
-            grid-template-columns: repeat(2, 1fr); Single column for mobile */
+            grid-template-columns: repeat(2, 1fr); /* Single column for mobile */
         }
 
         .technical-gallery, .lower {
